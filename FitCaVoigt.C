@@ -70,8 +70,8 @@ Double_t Voigt4(Double_t *x, Double_t *par)
     return sum + bg;
 }
 
-void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
-//void FitCaVoigt(const char* filename = "RUN51_frequencyscan_nm.txt")
+//void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
+void FitCaVoigt(const char* filename = "RUN51_frequencyscan_nm.txt")
 {
   std::ifstream infile(filename);
   if (!infile.is_open()) {
@@ -79,6 +79,8 @@ void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
     return;
   }
 
+
+  
   std::string basename = StripExtAndDir(filename);  
   std::vector<double> x, y, ex, ey; //wavelength
   std::vector<double> fx, efx; //frequency
@@ -101,7 +103,7 @@ void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
   gr->SetMarkerStyle(20);
 
   // --- キャンバス ---
-  auto c1 = new TCanvas("c1", "Voigt Fit - Ca Isotopes", 1000, 700);
+  auto c0 = new TCanvas("c0", "Voigt Fit - Ca Isotopes", 1000, 700);
   gr->Draw("AP");
   gPad->SetLogy();
   gPad->SetGrid();
@@ -132,12 +134,18 @@ void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
   fit_single->SetParLimits(2, 1.e-6,5.e-5);
   fit_single->SetParLimits(3, 1.e-6,5.e-5);
   gr->Fit(fit_single, "R");
+  peak   = fit_single->GetParameter(0);
+  peakshift = fit_single->GetParameter(1) - Mu40Ca; 
   sigma0 = fit_single->GetParameter(2);
   gamma0 = fit_single->GetParameter(3);
-  peakshift = fit_single->GetParameter(1) - Mu40Ca; 
   cout << "40Ca peak shift = " << peakshift<<endl; 
   //  return;
-  
+
+  auto c1 = new TCanvas("c1", "Voigt Fit - Ca Isotopes", 1000, 700);
+  gr->Draw("AP");
+  gPad->SetLogy();
+  gPad->SetGrid();
+
   // Fit関数の定義
   TF1 *fit = new TF1("fit", Voigt4, x.front(), x.back(), 11);
   fit->SetParameters(sigma0,
@@ -154,10 +162,10 @@ void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
   fit->SetParNames("sigma", "gamma", "A40", "A42", "A44", "A48", "mu40", "mu42", "mu44", "mu48", "background");
   fit->SetParLimits(0, sigma0*0.8,sigma0*1.2);
   fit->SetParLimits(1, gamma0*0.8,gamma0*1.2);
-  fit->SetParLimits(2, 0.,1.e15);
-  fit->SetParLimits(3, 0.,1.e15);
-  fit->SetParLimits(4, 0.,1.e15);
-  fit->SetParLimits(5, 0.,1.e15);
+  fit->SetParLimits(2, 0.,1.e5);
+  fit->SetParLimits(3, 0.,1.e5);
+  fit->SetParLimits(4, 0.,1.e5);
+  fit->SetParLimits(5, 0.,1.e5);
   fit->SetParLimits(6, (Mu40Ca+peakshift)*(1 - tolerance), (Mu40Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(7, (Mu42Ca+peakshift)*(1 - tolerance), (Mu42Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(8, (Mu44Ca+peakshift)*(1 - tolerance), (Mu44Ca+peakshift)*(1 + tolerance));
@@ -214,7 +222,6 @@ void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
 
   if (gSystem->AccessPathName("fig")) gSystem->mkdir("fig", true);
 
-
   c1->SaveAs(Form("./fig/Fit_%s.root",basename.c_str()));
   c1->SaveAs(Form("./fig/Fit_%s.pdf",basename.c_str()));
   c1->SaveAs(Form("./fig/Fit_%s.png",basename.c_str()));
@@ -239,6 +246,7 @@ void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
   Double_t f44 = WavelengthNmToFreqMHz(p44);
   Double_t f48 = WavelengthNmToFreqMHz(p48);
 
+  peak *= f40/Mu40Ca; // convert units  
   // FirFr関数の定義
   TF1 *fitFr = new TF1("fitFr", Voigt4, fx.front(), fx.back(), 11);
   fitFr->SetParameters(sigmaFr,
