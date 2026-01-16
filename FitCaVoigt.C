@@ -70,8 +70,6 @@ Double_t Voigt4(Double_t *x, Double_t *par)
     return sum + bg;
 }
 
-//void FitCaVoigt(const char* filename = "RUN31_frequencyscan.txt")
-//void FitCaVoigt(const char* filename = "RUN51_frequencyscan_nm.txt")
 void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
 {
   std::ifstream infile(filename);
@@ -88,7 +86,8 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
     x.push_back(xv);
     y.push_back(yv);
     ex.push_back(0.0);          // x誤差なし
-    ey.push_back(0.01 * yv);    // y誤差 1%
+    //    ey.push_back(0.01 * yv);    // y誤差 1%
+    ey.push_back(TMath::Sqrt(yv) );   // sqrt 誤差
     fx.push_back( WavelengthNmToFreqMHz(xv) );
     efx.push_back(0.0); 
   }
@@ -98,7 +97,7 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   double ymax = *minmax.second;
   
   TGraphErrors *gr = new TGraphErrors(x.size(),&x[0], &y[0],&ex[0], &ey[0]);
-  gr->SetTitle("Calcium Isotope Spectrum; Wavelength [nm] ; Count");
+  gr->SetTitle(Form("Calcium fluorescence spectrum / %s; Wavelength [nm] ; Count",filename));
   gr->SetMarkerStyle(20);
 
   // --- キャンバス ---
@@ -124,18 +123,18 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   double bg0 = y[0];
 
   
-  TF1 *fit_single = new TF1("fit_single", VoigtFunc, Mu40Ca*(1-5*tolerance), Mu40Ca*(1+30*tolerance), 5);
+  TF1 *fit_single = new TF1("fit_single", VoigtFunc, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+50*tolerance), 5);
   fit_single->SetParNames("A", "mean", "sigma", "gamma", "background");
   fit_single->SetParameter(0,peak);
   fit_single->SetParameter(1,Mu40Ca);
   fit_single->SetParameter(2,sigma0);
   fit_single->SetParameter(3,gamma0);
   fit_single->SetParameter(4,bg0);
-  fit_single->SetParLimits(0, 0,1.e10);
+  fit_single->SetParLimits(0, 0.,1.e10);
   fit_single->SetParLimits(1, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+10*tolerance));
   fit_single->SetParLimits(2, 1.e-6,5.e-5);
   fit_single->SetParLimits(3, 1.e-6,5.e-5);
-  fit_single->SetParLimits(4, 0., y[0]*3.);
+  fit_single->SetParLimits(4, bg0*1, bg0*3.);
   gr->Fit(fit_single, "R");
   peak   = fit_single->GetParameter(0);
   peakshift = fit_single->GetParameter(1) - Mu40Ca; 
@@ -164,17 +163,18 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   fit->SetParNames("sigma", "gamma", "A40", "A42", "A44", "A48", "mu40", "mu42", "mu44", "mu48", "background");
   fit->SetParLimits(0, sigma0*0.8,sigma0*1.2);
   fit->SetParLimits(1, gamma0*0.8,gamma0*1.2);
-  fit->SetParLimits(2, 0.,1.e5);
-  fit->SetParLimits(3, 0.,1.e5);
-  fit->SetParLimits(4, 0.,1.e5);
-  fit->SetParLimits(5, 0.,1.e5);
+  fit->SetParLimits(2, peak*A40Ca*0.5,peak*A40Ca*2);
+  fit->SetParLimits(3, peak*A42Ca*0.5,peak*A42Ca*2);
+  fit->SetParLimits(4, peak*A44Ca*0.5,peak*A44Ca*2);
+  fit->SetParLimits(5, peak*A48Ca*0.5,peak*A48Ca*2);
   fit->SetParLimits(6, (Mu40Ca+peakshift)*(1 - tolerance), (Mu40Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(7, (Mu42Ca+peakshift)*(1 - tolerance), (Mu42Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(8, (Mu44Ca+peakshift)*(1 - tolerance), (Mu44Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(9, (Mu48Ca+peakshift)*(1 - tolerance), (Mu48Ca+peakshift)*(1 + tolerance));
-  //  fit->FixParameter(10, 3800.);
-  fit->SetParLimits(10, 0., peak);
-  fit->SetParLimits(10, 0, y[0]*3.);
+  //  fit->FixParameter(10, bg0);
+  //  fit->SetParLimits(10, 0., peak);
+  //  fit->SetParLimits(10, 0, y[0]*3.);
+  fit->SetParLimits(10, bg0*0., bg0*2);
 
   fit->SetLineColor(kRed);
   fit->SetNpx(1000);
@@ -238,7 +238,7 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   int n = fx.size();
   for (int i = 0; i < n; i++) fx[i] -= offset;
   TGraphErrors *grf = new TGraphErrors(n, &fx[0], &y[0], &efx[0], &ey[0]);
-  grf->SetTitle("Calcium Isotope Spectrum; Frequency [MHz] ; Count");
+  grf->SetTitle(Form("Calcium fluorescence spectrum / %s; Wavelength [nm] ; Count",filename));
   grf->SetMarkerStyle(20);
 
   grf->Draw("AP");
@@ -269,15 +269,15 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   fitFr->SetParNames("sigma", "gamma", "A40", "A42", "A44", "A48", "fr40", "fr42", "fr44", "fr48", "background");
   fitFr->SetParLimits(0, sigmaFr*0.8,sigmaFr*1.2);
   fitFr->SetParLimits(1, gammaFr*0.8,gammaFr*1.2);
-  fitFr->SetParLimits(2, 0.,1.e15);
-  fitFr->SetParLimits(3, 0.,1.e15);
-  fitFr->SetParLimits(4, 0.,1.e15);
-  fitFr->SetParLimits(5, 0.,1.e15);
+  fitFr->SetParLimits(2, peak*A40Ca*0.5,peak*A40Ca*2);
+  fitFr->SetParLimits(3, peak*A42Ca*0.5,peak*A42Ca*2);
+  fitFr->SetParLimits(4, peak*A44Ca*0.5,peak*A44Ca*2);
+  fitFr->SetParLimits(5, peak*A48Ca*0.5,peak*A48Ca*2);
   fitFr->SetParLimits(6,  -tolerance,  +tolerance);
   fitFr->SetParLimits(7, (f42-f40)*(1 - tolerance), (f42-f40)*(1 + tolerance));
   fitFr->SetParLimits(8, (f44-f40)*(1 - tolerance), (f44-f40)*(1 + tolerance));
   fitFr->SetParLimits(9, (f48-f40)*(1 - tolerance), (f48-f40)*(1 + tolerance));
-  fitFr->SetParLimits(10, 0., peak);
+  fitFr->SetParLimits(10, bg0*0., bg0*3.);
   fitFr->SetLineColor(kRed);
   fitFr->SetNpx(1000);
   
