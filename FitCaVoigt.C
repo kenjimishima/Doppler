@@ -5,7 +5,6 @@
 #include <TAxis.h>
 #include <TMath.h>
 #include <fstream>
-#include "PlotVoigtEscapePL.C"
 
 Double_t A40Ca = 0.969;
 Double_t A42Ca = 0.00647;
@@ -124,9 +123,7 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   double bg0 = y[0];
   
   TF1 *fit_single = new TF1("fit_single", VoigtFunc, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+50*tolerance), 5);
-  //  TF1 *fit_single = new TF1("fit_single", VoigtEscapePL, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+50*tolerance), 7); //with cutoff
-  //  fit_single->SetParNames("A", "mean", "sigma", "gamma", "background");
-  fit_single->SetParNames("A", "mean", "sigma", "gamma", "cutoff", "sharpness", "background");
+  fit_single->SetParNames("A", "mean", "sigma", "gamma", "background");
   fit_single->SetParameter(0,peak);
   fit_single->SetParameter(1,Mu40Ca);
   fit_single->SetParameter(2,sigma0);
