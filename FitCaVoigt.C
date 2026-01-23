@@ -5,6 +5,7 @@
 #include <TAxis.h>
 #include <TMath.h>
 #include <fstream>
+#include "PlotVoigtEscapePL.C"
 
 Double_t A40Ca = 0.969;
 Double_t A42Ca = 0.00647;
@@ -121,20 +122,32 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   double peak = ymax*sigma0*TMath::Sqrt(TMath::TwoPi())*TMath::Pi();
   //  double bg0 = peak * 1.e-3;
   double bg0 = y[0];
-
   
   TF1 *fit_single = new TF1("fit_single", VoigtFunc, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+50*tolerance), 5);
-  fit_single->SetParNames("A", "mean", "sigma", "gamma", "background");
+  //  TF1 *fit_single = new TF1("fit_single", VoigtEscapePL, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+50*tolerance), 7); //with cutoff
+  //  fit_single->SetParNames("A", "mean", "sigma", "gamma", "background");
+  fit_single->SetParNames("A", "mean", "sigma", "gamma", "cutoff", "sharpness", "background");
   fit_single->SetParameter(0,peak);
   fit_single->SetParameter(1,Mu40Ca);
   fit_single->SetParameter(2,sigma0);
   fit_single->SetParameter(3,gamma0);
   fit_single->SetParameter(4,bg0);
+  fit_single->SetParameter(4,Mu40Ca*20*tolerance);
+  fit_single->SetParameter(5,3.8);
+  fit_single->SetParameter(6,bg0);
   fit_single->SetParLimits(0, 0.,1.e10);
   fit_single->SetParLimits(1, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+10*tolerance));
-  fit_single->SetParLimits(2, 1.e-6,5.e-5);
-  fit_single->SetParLimits(3, 1.e-6,5.e-5);
-  fit_single->SetParLimits(4, bg0*1, bg0*3.);
+  fit_single->SetParLimits(2, 1.e-6,10.e-5);
+  fit_single->SetParLimits(3, 1.e-6,10.e-5);
+  //  fit_single->SetParLimits(4, bg0*1, bg0*3.);
+  fit_single->SetParLimits(6, bg0*0.5, bg0*3.);
+  //  fit_single->FixParameter(4,Mu40Ca*25*tolerance);
+  fit_single->SetParLimits(4, Mu40Ca*15*tolerance, Mu40Ca*30*tolerance);
+  //  fit_single->FixParameter(5,3.8);
+  fit_single->FixParameter(6,bg0);
+  fit_single->SetNpx(1000);
+  //  fit_single->Draw();
+  //  return;
   gr->Fit(fit_single, "R");
   peak   = fit_single->GetParameter(0);
   peakshift = fit_single->GetParameter(1) - Mu40Ca; 
@@ -175,7 +188,6 @@ void FitCaVoigt(const char* filename = "RUN52_frequencyscan_nm.txt")
   //  fit->SetParLimits(10, 0., peak);
   //  fit->SetParLimits(10, 0, y[0]*3.);
   fit->SetParLimits(10, bg0*0., bg0*2);
-
   fit->SetLineColor(kRed);
   fit->SetNpx(1000);
 
