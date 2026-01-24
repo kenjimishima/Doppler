@@ -111,9 +111,9 @@ void PlotVoigtAll()
   const double gamma = 80.0;
 
   // ---- Cutoff parameters ----
-  const double nuc  = 1000.0;
+  const double nuc  = 600.0;
   const double q    = 6.0;
-  const double sigc = 200.0;
+  const double sigc = 140.0;
 
   // ---- Pure Voigt ----
   TF1 *fV = new TF1("fV", PureVoigt_TF1, xmin, xmax, 4);

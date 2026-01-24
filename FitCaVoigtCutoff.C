@@ -25,6 +25,11 @@ Double_t mass_48Ca = 47.952534;
 const Int_t num_ca = 4;
 Double_t ca_mass[num_ca] = {mass_40Ca, mass_42Ca, mass_44Ca, mass_48Ca};
 
+//Use Cutoff
+Bool_t bCutoff = kTRUE;
+//Bool_t bCutoff = kFALSE;
+
+//Use mass correction
 Bool_t bMassCorrection = kTRUE;
 //Bool_t bMassCorrection = kFALSE;
 
@@ -168,8 +173,6 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   double peak = ymax*sigma0*TMath::Sqrt(TMath::TwoPi())*TMath::Pi();
   double bg0 = y[0];
 
-  //  TF1 *fit_single = new TF1("fit_single", VoigtFunc, Mu40Ca*(1-10*tolerance), Mu40Ca*(1+50*tolerance), 5);
-  //  fit_single->SetParNames("A", "mean", "sigma", "gamma", "background");
   TF1 *fit_single = new TF1("fit_single", VoigtFuncCutoff, Mu40Ca*(1-8*tolerance), Mu40Ca*(1+50*tolerance),7);
   fit_single->SetParNames("A", "mean", "sigma", "gamma", "cutoff", "sigma_erf", "background");
   fit_single->SetParameter(0,peak);
@@ -185,9 +188,11 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fit_single->SetParLimits(3, gamma0*0.1, gamma0*10.);
   fit_single->SetParLimits(4, cutoff0*0.1,cutoff0*10.);
   fit_single->SetParLimits(5, erf_sig0*0.1,erf_sig0*10.);
-  fit_single->SetParLimits(6, bg0*0.3, bg0*3);
-  //  fit_single->FixParameter(5,sigma0*10);
-  //  fit_single->FixParameter(6,gamma0*10);
+  fit_single->SetParLimits(6, bg0*0.3, bg0*3.);
+  if(!bCutoff) {
+    fit_single->FixParameter(4, fit_single->GetXmax());
+    fit_single->FixParameter(5, 0.);
+  }
   fit_single->SetNpx(1000);
   //  fit_single->Draw();
   //  return;
@@ -206,20 +211,6 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   gr->Draw("AP");
   gPad->SetLogy();
   gPad->SetGrid();
-  // Fit関数の定義
-  //  TF1 *fit = new TF1("fit", Voigt4, x.front(), x.back(), 11);
-  //  fit->SetParameters(sigma0,
-  //		     gamma0,
-  //		     peak*A40Ca, 
-  //		     peak*A42Ca,
-  //		     peak*A44Ca,
-  //		     peak*A48Ca,
-  //		     Mu40Ca+peakshift,
-  //		     Mu42Ca+peakshift,
-  //		     Mu44Ca+peakshift,
-  //		     Mu48Ca+peakshift,
-  //		     bg0);
-  // Fit function with cutoff
   TF1 *fit = new TF1("fit", Voigt4Cutoff, x.front(), x.back(), 13);
   Double_t par[13] = {
     sigma0,
@@ -265,6 +256,10 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fit->SetParLimits(10, (Mu42Ca+peakshift)*(1 - tolerance), (Mu42Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(11, (Mu44Ca+peakshift)*(1 - tolerance), (Mu44Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(12, (Mu48Ca+peakshift)*(1 - tolerance), (Mu48Ca+peakshift)*(1 + tolerance));
+  if(!bCutoff) {
+    fit->FixParameter(2, x.back());
+    fit->FixParameter(3, 0.);
+  }
   fit->SetLineColor(kRed);
   fit->SetNpx(1000);
 
@@ -337,7 +332,7 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   int n = fx.size();
   for (int i = 0; i < n; i++) fx[i] -= offset;
   TGraphErrors *grf = new TGraphErrors(n, &fx[0], &y[0], &efx[0], &ey[0]);
-  grf->SetTitle(Form("Calcium fluorescence spectrum / %s; Wavelength [nm] ; Count",filename));
+  grf->SetTitle(Form("Calcium fluorescence spectrum / %s; Frequency [nm] ; Count",filename));
   grf->SetMarkerStyle(20);
 
   grf->Draw("AP");
@@ -370,7 +365,7 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   };
   for (int i = 0; i < 13; i++)   cout <<i<<" "<< parFr[i]<<endl;
   fitFr->SetParameters(parFr);
-
+  /////////
   fitFr->SetParName(0,  "sigma");
   fitFr->SetParName(1,  "gamma");
   fitFr->SetParName(2,  "cutoff");
@@ -384,9 +379,24 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fitFr->SetParName(10, "Fr42");
   fitFr->SetParName(11, "Fr44");
   fitFr->SetParName(12, "Fr48");
-  /////////
+  fitFr->SetParLimits(0, sigmaFr*0.8,sigmaFr*1.2);
+  fitFr->SetParLimits(1, gammaFr*0.8,gammaFr*1.2);
+  fitFr->SetParLimits(2, cutoffFr*0.8,sigmaFr*1.2);
+  fitFr->SetParLimits(3, erf_sigFr*0.8,erf_sigFr*1.2);
+  fitFr->SetParLimits(4, background*0.5, background*2.);
+  fitFr->SetParLimits(5, peak*A40Ca*0.5,peak*A40Ca*5);
+  fitFr->SetParLimits(6, peak*A42Ca*0.5,peak*A42Ca*5);
+  fitFr->SetParLimits(7, peak*A44Ca*0.5,peak*A44Ca*5);
+  fitFr->SetParLimits(8, peak*A48Ca*0.5,peak*A48Ca*5);
+  if(!bCutoff) {
+    fitFr->FixParameter(2, fx.back());
+    fitFr->FixParameter(3, 0.);
+  }
   fitFr->SetLineColor(kRed);
   fitFr->SetNpx(1000);
+
+
+  
   
   // フィット実行
   grf->Fit(fitFr, "R");
@@ -399,6 +409,8 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   // 共通パラメータ
   sigmaFr = fitFr->GetParameter(0);
   gammaFr = fitFr->GetParameter(1);
+  cutoffFr = fitFr->GetParameter(2);
+  erf_sigFr = fitFr->GetParameter(3);
 
   cout << "sigma = "<<  sigmaFr<<" [MHz]" << endl;
   cout << "gamma = "<<  gammaFr<<" [MHz]" << endl;
