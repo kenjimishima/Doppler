@@ -30,8 +30,8 @@ Bool_t bCutoff = kTRUE;
 //Bool_t bCutoff = kFALSE;
 
 //Use mass correction
-Bool_t bMassCorrection = kTRUE;
-//Bool_t bMassCorrection = kFALSE;
+//Bool_t bMassCorrection = kTRUE;
+Bool_t bMassCorrection = kFALSE;
 
 std::string StripExtAndDir(const std::string& s)
 {
@@ -395,15 +395,12 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fitFr->SetLineColor(kRed);
   fitFr->SetNpx(1000);
 
-
-  
-  
   // フィット実行
   grf->Fit(fitFr, "R");
-  Double_t p40Fr = fitFr->GetParameter(6);
-  Double_t p42Fr = fitFr->GetParameter(7);
-  Double_t p44Fr = fitFr->GetParameter(8);
-  Double_t p48Fr = fitFr->GetParameter(9);
+  Double_t p40Fr = fitFr->GetParameter(5);
+  Double_t p42Fr = fitFr->GetParameter(6);
+  Double_t p44Fr = fitFr->GetParameter(7);
+  Double_t p48Fr = fitFr->GetParameter(8);
   //  printf("%f %f %f %f\n", p40, p42, p44, p48);
 
   // 共通パラメータ
@@ -412,6 +409,11 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   cutoffFr = fitFr->GetParameter(2);
   erf_sigFr = fitFr->GetParameter(3);
 
+  cout << "ACa40/ACa40 = "<<  p40Fr/p40Fr<< endl;
+  cout << "ACa42/ACa40 = "<<  p42Fr/p40Fr<< endl;
+  cout << "ACa44/ACa40 = "<<  p44Fr/p40Fr<< endl;
+  cout << "ACa48/ACa40 = "<<  p48Fr/p40Fr<< endl;
+  
   cout << "sigma = "<<  sigmaFr<<" [MHz]" << endl;
   cout << "gamma = "<<  gammaFr<<" [MHz]" << endl;
   cout << "cutoff = "<< cutoffFr<<" [MHz]" << endl;
