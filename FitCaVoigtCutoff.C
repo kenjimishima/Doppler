@@ -115,7 +115,11 @@ Double_t Voigt4Cutoff(Double_t *x, Double_t *par)
     Double_t A     = par[5+i];
     Double_t mu    = par[5+num+i];
     Double_t xx = x[0] - mu;
-    if(bMassCorrection) sigma = par[0]*TMath::Sqrt(ca_mass[0]/ca_mass[i]); //Mass correction
+    if(bMassCorrection) sigma *= TMath::Sqrt(ca_mass[0]/ca_mass[i]); //Mass correction
+    //    if(bMassCorrection){
+    //      sigma *= TMath::Power(ca_mass[0]/ca_mass[i],2); //Mass correction
+    //      gamma *= TMath::Power(ca_mass[0]/ca_mass[i],2); //Mass correction
+    //    }
     sum += A * VoigtCutoffErf(xx, sigma, gamma, cutoff, erf_sig);
   }
   return sum + bg;
@@ -123,6 +127,8 @@ Double_t Voigt4Cutoff(Double_t *x, Double_t *par)
 
 void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
 {
+  std::cout << std::fixed << std::setprecision(2);
+
   std::ifstream infile(filename);
   if (!infile.is_open()) {
     Error("FitCaVoigt", "Cannot open input file: %s", filename);
@@ -248,10 +254,10 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fit->SetParLimits(2, cutoff0*0.8,sigma0*1.2);
   fit->SetParLimits(3, erf_sig0*0.8,erf_sig0*1.2);
   fit->SetParLimits(4, bg0*0.5, bg0*2.);
-  fit->SetParLimits(5, peak*A40Ca*0.5,peak*A40Ca*5);
-  fit->SetParLimits(6, peak*A42Ca*0.5,peak*A42Ca*5);
-  fit->SetParLimits(7, peak*A44Ca*0.5,peak*A44Ca*5);
-  fit->SetParLimits(8, peak*A48Ca*0.5,peak*A48Ca*5);
+  fit->SetParLimits(5, peak*A40Ca*0.1,peak*A40Ca*5);
+  fit->SetParLimits(6, peak*A42Ca*0.1,peak*A42Ca*5);
+  fit->SetParLimits(7, peak*A44Ca*0.1,peak*A44Ca*5);
+  fit->SetParLimits(8, peak*A48Ca*0.1,peak*A48Ca*5);
   fit->SetParLimits(9,  (Mu40Ca+peakshift)*(1 - tolerance), (Mu40Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(10, (Mu42Ca+peakshift)*(1 - tolerance), (Mu42Ca+peakshift)*(1 + tolerance));
   fit->SetParLimits(11, (Mu44Ca+peakshift)*(1 - tolerance), (Mu44Ca+peakshift)*(1 + tolerance));
@@ -384,10 +390,10 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fitFr->SetParLimits(2, cutoffFr*0.8,sigmaFr*1.2);
   fitFr->SetParLimits(3, erf_sigFr*0.8,erf_sigFr*1.2);
   fitFr->SetParLimits(4, background*0.5, background*2.);
-  fitFr->SetParLimits(5, peak*A40Ca*0.5,peak*A40Ca*5);
-  fitFr->SetParLimits(6, peak*A42Ca*0.5,peak*A42Ca*5);
-  fitFr->SetParLimits(7, peak*A44Ca*0.5,peak*A44Ca*5);
-  fitFr->SetParLimits(8, peak*A48Ca*0.5,peak*A48Ca*5);
+  fitFr->SetParLimits(5, peak*A40Ca*0.1,peak*A40Ca*5);
+  fitFr->SetParLimits(6, peak*A42Ca*0.1,peak*A42Ca*5);
+  fitFr->SetParLimits(7, peak*A44Ca*0.1,peak*A44Ca*5);
+  fitFr->SetParLimits(8, peak*A48Ca*0.1,peak*A48Ca*5);
   if(!bCutoff) {
     fitFr->FixParameter(2, fx.back());
     fitFr->FixParameter(3, 0.);
@@ -409,10 +415,10 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   cutoffFr = fitFr->GetParameter(2);
   erf_sigFr = fitFr->GetParameter(3);
 
-  cout << "ACa40/ACa40 = "<<  p40Fr/p40Fr<< endl;
-  cout << "ACa42/ACa40 = "<<  p42Fr/p40Fr<< endl;
-  cout << "ACa44/ACa40 = "<<  p44Fr/p40Fr<< endl;
-  cout << "ACa48/ACa40 = "<<  p48Fr/p40Fr<< endl;
+  cout << "ACa40/ACa40 = "<<  p40Fr/p40Fr*100.<<" [%]" <<endl;
+  cout << "ACa42/ACa40 = "<<  p42Fr/p40Fr*100.<<" [%]" <<endl;
+  cout << "ACa44/ACa40 = "<<  p44Fr/p40Fr*100.<<" [%]" <<endl;
+  cout << "ACa48/ACa40 = "<<  p48Fr/p40Fr*100.<<" [%]" <<endl;
   
   cout << "sigma = "<<  sigmaFr<<" [MHz]" << endl;
   cout << "gamma = "<<  gammaFr<<" [MHz]" << endl;
@@ -434,7 +440,12 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
     double mu = fitFr->GetParameter(5 + num  + i); // Fr40,42,44,48    
     f->SetNpx(1000);
     Double_t sigmaFr_corr = sigmaFr;
+    Double_t gammaFr_corr = gammaFr;
     if(bMassCorrection) sigmaFr_corr = sigmaFr*TMath::Sqrt(ca_mass[0]/ca_mass[i]); //Mass correction
+    //    if(bMassCorrection){
+    //      sigmaFr_corr = sigmaFr*TMath::Power(ca_mass[0]/ca_mass[i],2); //Mass correction
+    //      gammaFr_corr = sigmaFr*TMath::Power(ca_mass[0]/ca_mass[i],2); //Mass correction
+    //    }
     f->SetParameters(A, mu, sigmaFr_corr, gammaFr, cutoffFr, erf_sigFr, 0.);
     f->SetLineColor(colors[i]);
     f->SetLineStyle(2);
