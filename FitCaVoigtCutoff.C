@@ -26,8 +26,8 @@ const Int_t num_ca = 4;
 Double_t ca_mass[num_ca] = {mass_40Ca, mass_42Ca, mass_44Ca, mass_48Ca};
 
 //Use Cutoff
-Bool_t bCutoff = kTRUE;
-//Bool_t bCutoff = kFALSE;
+//Bool_t bCutoff = kTRUE;
+Bool_t bCutoff = kFALSE;
 
 //Use mass correction
 //Bool_t bMassCorrection = kTRUE;
@@ -196,6 +196,7 @@ void FitCaVoigtCutoff(const char* filename = "RUN52_frequencyscan_nm.txt")
   fit_single->SetParLimits(5, erf_sig0*0.1,erf_sig0*10.);
   fit_single->SetParLimits(6, bg0*0.3, bg0*3.);
   if(!bCutoff) {
+    //    fit_single->FixParameter(4, fit_single->GetXmax());
     fit_single->FixParameter(4, fit_single->GetXmax());
     fit_single->FixParameter(5, 0.);
   }
